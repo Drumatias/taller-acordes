@@ -1,5 +1,5 @@
 // Guarda la app para usarla sin internet. Cambia VERSION cada vez que subas cambios.
-const VERSION = 'taller-acordes-v2';
+const VERSION = 'taller-acordes-v3';
 const APP = ['./','index.html','pc.html','movil.html','manifest.webmanifest',
   'icons/icon-192.png','icons/icon-512.png','icons/icon-maskable-512.png','icons/apple-touch-icon.png'];
 

@@ -252,6 +252,7 @@ h2{font-family:var(--font-display);font-weight:400;font-size:1.35rem;margin:0}
       <label class="field">Tiempos nuevos <input type="number" id="defBeats" min="1" max="16" value="4"></label>
       <label class="toggle" title="Elige la inversión más cercana al acorde anterior para que las voces se muevan poco"><input type="checkbox" id="vl" checked> Conducción de voces</label>
       <label class="toggle"><input type="checkbox" id="bass" checked> Bajo</label>
+      <span class="field"><label class="toggle"><input type="checkbox" id="metro" checked> Metrónomo</label><input type="range" id="metroVol" min="0" max="100" value="35" aria-label="Volumen del metrónomo" title="Volumen del metrónomo"></span>
     </div>
 
     <div class="strip" id="strip"></div>
@@ -325,7 +326,7 @@ const STORE_KEY = 'taller-acordes:v1';
 let S = {
   root:2, type:'m', inv:0, acc:'mix',
   prog:[], sel:null, bpm:80, style:'block', defBeats:4, loop:true, vl:true, bass:true,
-  saved:[], isExample:false
+  saved:[], isExample:false, metro:true, metroVol:35
 };
 let uid = 1;
 const newId = () => 'c' + (uid++) + Math.random().toString(36).slice(2,6);
@@ -348,13 +349,8 @@ function persist(){
     localStorage.setItem(STORE_KEY, JSON.stringify(rest));
   }catch(e){}
 }
-if(!loadState()){
-  S.prog = [
-    {root:2,type:'m',inv:0,beats:4},{root:7,type:'7',inv:0,beats:4},
-    {root:0,type:'maj7',inv:0,beats:4},{root:9,type:'7',inv:0,beats:4}
-  ].map(c => ({...c, id:newId()}));
-  S.isExample = true;
-}
+loadState();
+if(S.isExample){ S.prog = []; S.isExample = false; }
 
 // ---------- Utilidades ----------
 const nm = pc => NAMES[S.acc][mod12(pc)];
@@ -481,6 +477,26 @@ function hushAll(){
   }
   live = [];
 }
+// Metrónomo: un "tic" corto y suave (sin eco), más marcado en el primer tiempo de cada acorde.
+let clickBufs = null;
+function clickBuf(accent){
+  if(!clickBufs){
+    clickBufs = {};
+    for(const [k,f] of [['a',1400],['n',1050]]){
+      const sr = ctx.sampleRate, len = Math.floor(sr*0.05), b = ctx.createBuffer(1,len,sr), d = b.getChannelData(0);
+      for(let i=0;i<len;i++){ const tt = i/sr; d[i] = Math.sin(2*Math.PI*f*tt) * Math.exp(-tt/0.009) * Math.min(1, i/(sr*0.0015)); }
+      clickBufs[k] = b;
+    }
+  }
+  return accent ? clickBufs.a : clickBufs.n;
+}
+function click(t, accent, force){
+  if(!force && (!S.metro || S.metroVol <= 0)) return;
+  const src = ctx.createBufferSource(); src.buffer = clickBuf(accent);
+  const g = ctx.createGain(); g.gain.value = (S.metroVol/100) * (accent ? 0.32 : 0.2);
+  src.connect(g); g.connect(master); src.start(t);
+  live.push({g, src, end:t+0.06});
+}
 function chordAt(notes, bass, t, dur, style, beatDur){
   const vel = 0.42/Math.sqrt(notes.length);
   if(style==='block'){
@@ -526,6 +542,7 @@ function scheduleCycle(t0){
   S.prog.forEach((c,i)=>{
     const dur = c.beats * beat;
     chordAt(vs[i].notes, S.bass ? vs[i].bass : null, t, dur, S.style, beat);
+    for(let k=0;k<c.beats;k++) click(t + k*beat, k===0);
     events.push({id:c.id, start:t, end:t+dur, notes:vs[i].notes});
     t += dur;
   });
@@ -703,7 +720,7 @@ function renderAll(){
   renderSelector(); renderStrip(); renderSaved(); renderPlayBtn();
   document.querySelectorAll('[data-acc]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.acc===S.acc));
   $('bpm').value = S.bpm; $('bpmR').value = S.bpm; $('style').value = S.style; $('defBeats').value = S.defBeats;
-  $('loop').checked = S.loop; $('vl').checked = S.vl; $('bass').checked = S.bass;
+  $('loop').checked = S.loop; $('vl').checked = S.vl; $('bass').checked = S.bass; $('metro').checked = S.metro; $('metroVol').value = S.metroVol;
 }
 let toastT=null;
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, 1700); }
@@ -776,6 +793,9 @@ $('btnPlay').onclick = ()=> playing ? stopProg() : startProg();
 $('loop').onchange = e=>{ S.loop=e.target.checked; persist(); };
 $('vl').onchange = e=>{ S.vl=e.target.checked; persist(); renderStrip(); renderSaved(); };
 $('bass').onchange = e=>{ S.bass=e.target.checked; persist(); };
+$('metro').onchange = e=>{ S.metro=e.target.checked; persist(); };
+$('metroVol').oninput = e=>{ S.metroVol=+e.target.value; persist(); };
+$('metroVol').onchange = ()=>{ ensureAudio(); click(ctx.currentTime+0.02, true, true); };
 $('style').onchange = e=>{ S.style=e.target.value; persist(); };
 $('defBeats').onchange = e=>{ S.defBeats=Math.min(16,Math.max(1,+e.target.value||4)); e.target.value=S.defBeats; persist(); };
 function setBpm(v){ S.bpm=Math.min(200,Math.max(40,+v||80)); $('bpm').value=S.bpm; $('bpmR').value=S.bpm; persist(); }
