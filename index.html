@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Taller de Acordes</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Acordes">
+<meta name="theme-color" content="#11131b">
+<script>
+// Abre la última versión usada; si es la primera vez, elige según la pantalla.
+(function(){
+  var v = null;
+  try{ v = localStorage.getItem('taller-acordes:vista'); }catch(e){}
+  if(!v){ v = (Math.min(screen.width, innerWidth) < 760 || matchMedia('(pointer:coarse)').matches) ? 'movil' : 'pc'; }
+  location.replace(v === 'movil' ? 'movil.html' : 'pc.html');
+})();
+</script>
+<style>body{margin:0;background:#11131b;color:#eef0f6;font:16px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}a{color:inherit;margin:0 10px}</style>
+</head>
+<body>
+<p>Abriendo… <a href="movil.html">Celular</a> · <a href="pc.html">PC</a></p>
+</body>
+</html>
