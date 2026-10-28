@@ -154,7 +154,36 @@ button{cursor:pointer;touch-action:manipulation}
 .saveditem .sc{font-family:var(--font-mono);font-size:.78rem;color:var(--muted);flex-basis:100%;overflow-wrap:anywhere}
 .hint{color:var(--muted);font-size:.82rem;margin:0}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--dock-h, 210px) + 10px);background:var(--fg);color:var(--bg);padding:9px 15px;border-radius:11px;font-weight:600;font-size:.88rem;z-index:60;max-width:calc(100% - 32px);text-align:center}
+
+/* Mis progresiones (desplegable en el dock) */
+.tbtns{display:flex;gap:8px}
+.savedbox{border-top:1px solid var(--line);margin-inline:-14px;padding-inline:14px;padding-top:2px}
+.savedtoggle{width:100%;display:flex;justify-content:space-between;align-items:center;border:0;background:transparent;padding:8px 2px 0;font-weight:600;font-size:.9rem}
+.savedtoggle .cnt{color:var(--muted);font-weight:400;font-family:var(--font-mono);font-size:.8rem}
+.savedtoggle .chev{display:inline-block;transition:transform .2s;color:var(--muted)}
+.savedtoggle[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.savedlist{max-height:min(40vh, 320px);overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:10px 0 2px;overscroll-behavior:contain}
+.savedlist .saveditem:first-of-type{border-top:0}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+/* ---- Tour guiado ---- */
+:root{--tour-scrim:rgba(8,9,14,.74)}
+.tour-block{position:fixed;inset:0;z-index:90}
+.tour-hole{position:fixed;z-index:91;border-radius:14px;pointer-events:none;box-shadow:0 0 0 2px rgba(255,255,255,.92), 0 0 0 9999px var(--tour-scrim);transition:left .28s ease, top .28s ease, width .28s ease, height .28s ease}
+.tour-card{position:fixed;z-index:92;width:min(340px, calc(100vw - 24px));background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 18px 44px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:8px;transition:top .28s ease, left .28s ease}
+.tour-card h3{font-family:var(--font-display);font-weight:400;font-size:1.25rem;margin:0;text-wrap:balance}
+.tour-card p{margin:0;color:var(--muted);line-height:1.5;font-size:.92rem}
+.tour-card p b{color:var(--fg)}
+.tour-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tour-step{font-family:var(--font-mono);font-size:.7rem;color:var(--muted);letter-spacing:.05em}
+.tour-prog{display:flex;gap:4px}
+.tour-prog i{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.tour-prog i.on{background:var(--fg)}
+.tour-actions{display:flex;align-items:center;gap:8px;margin-top:6px}
+.tour-btn{border:1px solid var(--line);background:var(--surface-2);border-radius:10px;padding:9px 14px;font-weight:600;cursor:pointer}
+.tour-btn.primary{background:var(--primary-bg);color:var(--primary-fg);border-color:var(--primary-bg)}
+.tour-link{border:0;background:transparent;color:var(--muted);text-decoration:underline;padding:6px 2px;font-size:.85rem;cursor:pointer}
+@media (prefers-reduced-motion: reduce){.tour-hole,.tour-card{transition:none}}
 @media (min-width:700px){ .sym{font-size:3.8rem} .piano{height:120px} }
 </style>
 </head>
@@ -163,7 +192,7 @@ button{cursor:pointer;touch-action:manipulation}
 <div class="app">
   <div class="topbar">
     <h1>Taller de Acordes</h1>
-    <span style="display:flex;gap:8px"><a class="iconbtn" href="pc.html" aria-label="Versión para PC" style="text-decoration:none;color:inherit;font-size:.75rem;font-weight:700">PC</a><button class="iconbtn" id="openSheet" type="button" aria-label="Ajustes y progresiones guardadas">⚙︎</button></span>
+    <span class="tbtns"><a class="iconbtn" href="pc.html" aria-label="Versión para PC" style="text-decoration:none;color:inherit;font-size:.75rem;font-weight:700">PC</a><button class="iconbtn" id="tourBtn" type="button" aria-label="Ver el tour de la app">?</button><button class="iconbtn" id="openSheet" type="button" aria-label="Ajustes">⚙︎</button></span>
   </div>
 
   <section class="hero" id="hero" aria-label="Acorde en prueba">
@@ -187,7 +216,7 @@ button{cursor:pointer;touch-action:manipulation}
     <div class="roots" id="roots"></div>
   </section>
 
-  <section class="sect">
+  <section class="sect" id="typeSect">
     <span class="label">Tipo</span>
     <div class="tabs" role="tablist" id="tabs"></div>
     <div class="chips" id="types"></div>
@@ -221,6 +250,13 @@ button{cursor:pointer;touch-action:manipulation}
       <button class="big" id="btnPlay" type="button">▶ Tocar</button>
       <button class="big" id="btnListen" type="button">♪ Oír</button>
       <button class="big primary" id="btnSave" type="button">＋ Guardar</button>
+    </div>
+    <div class="savedbox">
+      <button type="button" class="savedtoggle" id="savedToggle" aria-expanded="false" aria-controls="savedList"><span>Mis progresiones <span class="cnt" id="savedCount"></span></span><span class="chev">▾</span></button>
+      <div class="savedlist" id="savedList" hidden>
+        <div class="btnrow"><input class="txt" id="saveName" placeholder="Nombre, p. ej. «Coro en Cm»" maxlength="60" style="flex:1;min-width:150px"><button class="btn primary" type="button" id="btnStore">Guardar actual</button></div>
+        <div id="saved" class="srow"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -280,12 +316,6 @@ button{cursor:pointer;touch-action:manipulation}
         <button class="btn" type="button" id="trUp">Transponer +½</button>
         <button class="btn" type="button" id="btnClear">Vaciar</button>
       </div>
-    </div>
-
-    <div class="srow">
-      <span class="label">Mis progresiones</span>
-      <div class="btnrow"><input class="txt" id="saveName" placeholder="Nombre, p. ej. «Coro en Cm»" maxlength="60" style="flex:1;min-width:160px"><button class="btn primary" type="button" id="btnStore">Guardar</button></div>
-      <div id="saved" class="srow"></div>
     </div>
 
     <div class="srow">
@@ -677,6 +707,7 @@ function renderSettings(){
   document.querySelectorAll('[data-db]').forEach(b=>b.setAttribute('aria-pressed', +b.dataset.db===S.defBeats));
   document.querySelectorAll('[data-acc]').forEach(b=>b.setAttribute('aria-pressed', b.dataset.acc===S.acc));
   $('loop').checked=S.loop; $('vl').checked=S.vl; $('bass').checked=S.bass; $('metro').checked=S.metro; $('metroVol').value=S.metroVol;
+  $('savedCount').textContent = S.saved.length ? `(${S.saved.length})` : '';
   $('saved').innerHTML = S.saved.length ? S.saved.map((p,i)=>`<div class="saveditem"><span class="sn">${esc(p.name)}</span><span style="flex:1"></span>
       <button class="btn" type="button" data-load="${i}">Cargar</button><button class="btn" type="button" data-delsaved="${i}">Borrar</button>
       <span class="sc">${p.prog.map(c=>chordSymbol(c,!S.vl)).join(' – ')}</span></div>`).join('')
@@ -737,7 +768,7 @@ document.addEventListener('click', e=>{
   if(d.style){ S.style=d.style; persist(); renderSettings(); renderStrip(); return; }
   if(d.db){ S.defBeats=+d.db; persist(); renderSettings(); return; }
   if(d.acc){ S.acc=d.acc; persist(); renderAll(); return; }
-  if(d.load!=null){ const p=S.saved[+d.load]; stopProg(); S.prog=p.prog.map(c=>({...c,id:newId()})); S.sel=null; S.isExample=false; persist(); renderAll(); openSheet(false); toast(`«${p.name}» cargada`); return; }
+  if(d.load!=null){ const p=S.saved[+d.load]; stopProg(); S.prog=p.prog.map(c=>({...c,id:newId()})); S.sel=null; S.isExample=false; persist(); renderAll(); setSavedOpen(false); toast(`«${p.name}» cargada`); return; }
   if(d.delsaved!=null){ const p=S.saved.splice(+d.delsaved,1)[0]; persist(); renderSettings(); toast(`«${p.name}» borrada`); return; }
 });
 
@@ -747,6 +778,8 @@ $('btnPlay').onclick=()=>{ buzz(); playing?stopProg():startProg(); };
 $('prevRoot').onclick=()=>setRoot(S.root-1);
 $('nextRoot').onclick=()=>setRoot(S.root+1);
 $('openSheet').onclick=()=>openSheet(true);
+function setSavedOpen(on){ $('savedList').hidden=!on; $('savedToggle').setAttribute('aria-expanded', on); measureDock(); }
+$('savedToggle').onclick=()=>setSavedOpen($('savedList').hidden);
 $('closeSheet').onclick=()=>openSheet(false);
 $('scrim').onclick=()=>openSheet(false);
 function setBpm(v){ S.bpm=Math.min(200,Math.max(40,+v||80)); $('bpmR').value=S.bpm; $('bpmVal').textContent=S.bpm+' BPM'; persist(); renderStrip(); }
@@ -807,6 +840,96 @@ document.addEventListener('keydown', e=>{
 window.addEventListener('resize', measureDock);
 
 renderAll(); measureDock();
+try{ new ResizeObserver(()=>measureDock()).observe(document.getElementById('dock')); }catch(e){}
+
+const TOUR = [
+  {title:'Bienvenido al Taller', text:'Aquí armas progresiones acorde por acorde, sin amarrarte a una tonalidad. El flujo es siempre el mismo: <b>elegir → oír → guardar</b>, y repetir. Te muestro dónde está cada cosa.'},
+  {sel:'#hero', title:'El acorde en prueba', text:'Su nombre, sus notas y el teclado. <b>Desliza el dedo a los lados</b> sobre esta tarjeta para subir o bajar medio tono, y toca una tecla para oírla suelta.'},
+  {sel:'#roots', title:'1 · Elige la fundamental', text:'La nota que le da nombre al acorde. Al tocarla, el acorde suena al instante.'},
+  {sel:'#typeSect', title:'2 · Elige el tipo', text:'Usa las pestañas: <b>Los cinco</b> del libro, <b>Séptimas</b> y <b>Color</b>. Cada familia tiene su color, igual que en <i>Armonía Ilustrada</i>.'},
+  {sel:'#conn', title:'¿Qué acorde sigue?', text:'Ideas del libro a partir de tu último acorde. Desliza para ver más. Al tocarlas solo las escuchas; las guardas si te convencen.'},
+  {sel:'#btnListen', title:'3 · Oír', text:'Repite el acorde que estás probando las veces que quieras.'},
+  {sel:'#btnSave', title:'4 · Guardar', text:'Si te gusta, guárdalo y se suma al final de la tira. Luego vuelves al paso 1 por el siguiente.'},
+  {sel:'#strip', title:'Tu progresión', text:'Toca un acorde de la tira para editarlo: moverlo, cambiar sus tiempos, quitarlo o <b>reemplazarlo</b> por el que estás probando.'},
+  {sel:'#btnPlay', title:'5 · Tocar', text:'Reproduce la progresión completa en loop. Mientras suena, la pantalla no se apaga.'},
+  {sel:'.savedbox', title:'Mis progresiones', text:'Despliega esta lista para guardar la progresión actual con un nombre o volver a una anterior.'},
+  {sel:'#openSheet', title:'Ajustes', text:'Tempo, estilo, metrónomo, bajo, conducción de voces, transponer e importar una progresión copiada desde la PC.'},
+  {sel:'#tourBtn', title:'Eso es todo', text:'Puedes repetir este recorrido cuando quieras desde este botón.'}
+];
+function tourPrep(){ openSheet(false); setSavedOpen(false); if(S.sel){ S.sel=null; renderSelector(); renderStrip(); } }
+
+// ---------- Tour guiado ----------
+const TOUR_KEY = 'taller-acordes:tour-v1';
+let tourI = -1, tourEls = null;
+function tourBuild(){
+  if(tourEls) return;
+  const block = document.createElement('div'); block.className = 'tour-block';
+  const hole = document.createElement('div'); hole.className = 'tour-hole';
+  const card = document.createElement('div'); card.className = 'tour-card'; card.setAttribute('role','dialog'); card.setAttribute('aria-modal','true'); card.setAttribute('aria-live','polite');
+  document.body.append(block, hole, card);
+  tourEls = {block, hole, card};
+  card.addEventListener('click', e=>{
+    const a = e.target.closest('[data-tour]'); if(!a) return;
+    const k = a.dataset.tour;
+    if(k==='next') tourGo(tourI+1); else if(k==='prev') tourGo(tourI-1); else tourEnd();
+  });
+  block.addEventListener('click', ()=> tourGo(tourI+1));
+}
+function tourShow(on){ ['block','hole','card'].forEach(k=> tourEls[k].hidden = !on); }
+function tourStart(){
+  tourPrep();
+  tourBuild(); tourShow(true); tourGo(0);
+}
+function tourEnd(){
+  tourI = -1; if(tourEls) tourShow(false);
+  try{ localStorage.setItem(TOUR_KEY, '1'); }catch(e){}
+}
+function tourGo(i){
+  if(i < 0) return;
+  if(i >= TOUR.length){ tourEnd(); return; }
+  tourI = i;
+  const st = TOUR[i], last = i === TOUR.length-1;
+  const el = st.sel ? document.querySelector(st.sel) : null;
+  if(el && !el.closest('.dock')) el.scrollIntoView({block:'center', behavior:'auto'});
+  const dots = TOUR.map((_,k)=>`<i class="${k<=i?'on':''}"></i>`).join('');
+  tourEls.card.innerHTML = `<div class="tour-top"><span class="tour-step">${i+1} / ${TOUR.length}</span><span class="tour-prog" aria-hidden="true">${dots}</span></div>
+    <h3>${st.title}</h3><p>${st.text}</p>
+    <div class="tour-actions">${last ? '' : '<button type="button" class="tour-link" data-tour="skip">Saltar tour</button>'}<span style="flex:1"></span>
+    ${i>0 ? '<button type="button" class="tour-btn" data-tour="prev">Atrás</button>' : ''}
+    <button type="button" class="tour-btn primary" data-tour="${last?'done':'next'}">${last ? '¡A componer!' : (i===0 ? 'Empezar' : 'Siguiente')}</button></div>`;
+  requestAnimationFrame(()=> requestAnimationFrame(()=>{ tourPlace(); const p = tourEls.card.querySelector('.primary'); if(p) p.focus({preventScroll:true}); }));
+}
+function tourPlace(){
+  if(tourI < 0) return;
+  const st = TOUR[tourI], el = st.sel ? document.querySelector(st.sel) : null;
+  const {hole, card} = tourEls, vw = innerWidth, vh = innerHeight, m = 12;
+  let r;
+  if(el){ const b = el.getBoundingClientRect(), p = 7; r = {x:b.left-p, y:b.top-p, w:b.width+2*p, h:b.height+2*p}; }
+  else r = {x:vw/2, y:vh/2, w:0, h:0};
+  Object.assign(hole.style, {left:r.x+'px', top:r.y+'px', width:r.w+'px', height:r.h+'px'});
+  const cw = card.offsetWidth, ch = card.offsetHeight;
+  let top, left;
+  if(!el){ top = (vh-ch)/2; left = (vw-cw)/2; }
+  else{
+    if(r.y + r.h + m + ch <= vh - 8) top = r.y + r.h + m;
+    else if(r.y - m - ch >= 8) top = r.y - m - ch;
+    else top = Math.max(8, vh - ch - 8);
+    left = Math.min(Math.max(8, r.x + r.w/2 - cw/2), vw - cw - 8);
+  }
+  card.style.top = Math.round(top)+'px'; card.style.left = Math.round(left)+'px';
+}
+document.addEventListener('keydown', e=>{
+  if(tourI < 0) return;
+  e.stopImmediatePropagation();
+  if(e.key==='Escape'){ e.preventDefault(); tourEnd(); }
+  else if(e.key==='ArrowRight' || e.key==='Enter' || e.code==='Space'){ e.preventDefault(); tourGo(tourI+1); }
+  else if(e.key==='ArrowLeft'){ e.preventDefault(); tourGo(tourI-1); }
+  else if(e.key==='Tab'){ e.preventDefault(); const bs=[...tourEls.card.querySelectorAll('button')]; const k=bs.indexOf(document.activeElement); const n=bs[(k+(e.shiftKey?-1:1)+bs.length)%bs.length]; if(n) n.focus(); }
+}, true);
+window.addEventListener('resize', ()=> tourPlace());
+window.addEventListener('scroll', ()=> tourPlace(), {passive:true});
+document.getElementById('tourBtn').onclick = tourStart;
+try{ if(!localStorage.getItem(TOUR_KEY)) setTimeout(tourStart, 700); }catch(e){}
 })();
 </script>
 
